@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
@@ -30,10 +31,12 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             long coveredBranches = 0;
             long totalBranches = 0;
 
+            string commonPrefix;
+
             var rootElement = new XElement("coverage");
 
-            rootElement.Add(new XElement("sources"));
-            rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches));
+            rootElement.Add(CreateSourcesElement(openCoverReport, out commonPrefix));
+            rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
 
             double lineRate = totalLines == 0 ? 1 : coveredLines / (double)totalLines;
             double branchRate = totalBranches == 0 ? 1 : coveredBranches / (double)totalBranches;
@@ -51,7 +54,43 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return rootElement;
         }
 
-        private static XElement CreatePackagesElement(XDocument openCoverReport, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches)
+        private static XElement CreateSourcesElement(XDocument openCoverReport, out string commonPrefix)
+        {
+            var sources = new XElement("sources");
+            var sourceDirectories = openCoverReport.Root
+                .Element("Modules")
+                .Elements("Module")
+                .Where(m => m.Attribute("skippedDueTo") == null)
+                .Elements("Files")
+                .Elements("File")
+                .Attributes("fullPath")
+                .Select(a => Path.GetDirectoryName(a.Value))
+                .Distinct();
+
+            commonPrefix = sourceDirectories.FirstOrDefault();
+
+            if (commonPrefix != null)
+            {
+                foreach (var sourceDirectory in sourceDirectories)
+                {
+                    for (int i = 0; i < Math.Min(commonPrefix.Length, sourceDirectory.Length); i++)
+                    {
+                        if (commonPrefix[i] == sourceDirectory[i])
+                            continue;
+
+                        int lastMatch = commonPrefix.LastIndexOf('\\', i - 1);
+                        commonPrefix = commonPrefix.Substring(0, lastMatch);
+                        break;
+                    }
+                }
+
+                sources.Add(new XElement("source", commonPrefix));
+            }
+
+            return sources;
+        }
+
+        private static XElement CreatePackagesElement(XDocument openCoverReport, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
         {
             var packagesElement = new XElement("packages");
 
@@ -63,13 +102,13 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             foreach (var module in modules)
             {
-                packagesElement.Add(CreatePackageElement(module, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches));
+                packagesElement.Add(CreatePackageElement(module, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
             }
 
             return packagesElement;
         }
 
-        private static XElement CreatePackageElement(XElement module, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches)
+        private static XElement CreatePackageElement(XElement module, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
         {
             long packageCoveredLines = 0;
             long packageTotalLines = 0;
@@ -100,7 +139,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             foreach (var clazz in classes)
             {
-                classesElement.Add(CreateClassElement(clazz, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches));
+                classesElement.Add(CreateClassElement(clazz, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
             }
 
             double lineRate = packageTotalLines == 0 ? 1 : packageCoveredLines / (double)packageTotalLines;
@@ -125,7 +164,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return packageElement;
         }
 
-        private static XElement CreateClassElement(XElement clazz, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches)
+        private static XElement CreateClassElement(XElement clazz, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
         {
             long classCoveredLines = 0;
             long classTotalLines = 0;
@@ -140,6 +179,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             // First method is used to determine name of file (partial classes are not handled correctly)
             string fileName = firstMethodWithFileRef == null ? string.Empty : filesById[firstMethodWithFileRef.Element("FileRef").Attribute("uid").Value];
+            fileName = fileName.Replace(commonPrefix + '\\', null);
 
             var classElement = new XElement(
                 "class",
