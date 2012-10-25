@@ -10,20 +10,20 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 {
     public static class Converter
     {
-        public static XDocument ConvertToCobertura(XDocument openCoverReport)
+        public static XDocument ConvertToCobertura(XDocument openCoverReport, string sourcesDirectory)
         {
             if (openCoverReport == null)
             {
                 throw new ArgumentNullException("openCoverReport");
             }
 
-            XDocument result = new XDocument(new XDeclaration("1.0", null, null), CreateRootElement(openCoverReport));
+            XDocument result = new XDocument(new XDeclaration("1.0", null, null), CreateRootElement(openCoverReport, sourcesDirectory));
             result.AddFirst(new XDocumentType("coverage", null, "http://cobertura.sourceforge.net/xml/coverage-04.dtd", null));
 
             return result;
         }
 
-        private static XElement CreateRootElement(XDocument openCoverReport)
+        private static XElement CreateRootElement(XDocument openCoverReport, string sourcesDirectory)
         {
             long coveredLines = 0;
             long totalLines = 0;
@@ -35,8 +35,9 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             var rootElement = new XElement("coverage");
 
-            rootElement.Add(CreateSourcesElement(openCoverReport, out commonPrefix));
-            rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
+            rootElement.Add(CreateSourcesElement(openCoverReport, sourcesDirectory, out commonPrefix));
+            var rootPrefixRegex = new Regex("^" + Regex.Escape(commonPrefix), RegexOptions.IgnoreCase);
+            rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, rootPrefixRegex));
 
             double lineRate = totalLines == 0 ? 1 : coveredLines / (double)totalLines;
             double branchRate = totalBranches == 0 ? 1 : coveredBranches / (double)totalBranches;
@@ -54,7 +55,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return rootElement;
         }
 
-        private static XElement CreateSourcesElement(XDocument openCoverReport, out string commonPrefix)
+        private static XElement CreateSourcesElement(XDocument openCoverReport, string sourcesDirectory, out string commonPrefix)
         {
             var sources = new XElement("sources");
             var sourceDirectories = openCoverReport.Root
@@ -67,30 +68,34 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 .Select(a => Path.GetDirectoryName(a.Value))
                 .Distinct();
 
-            commonPrefix = sourceDirectories.FirstOrDefault();
+            commonPrefix = sourcesDirectory ?? sourceDirectories.FirstOrDefault();
 
             if (commonPrefix != null)
             {
-                foreach (var sourceDirectory in sourceDirectories)
+                if (sourcesDirectory == null)
                 {
-                    for (int i = 0; i < Math.Min(commonPrefix.Length, sourceDirectory.Length); i++)
+                    foreach (var sourceDirectory in sourceDirectories)
                     {
-                        if (commonPrefix[i] == sourceDirectory[i])
-                            continue;
+                        for (int i = 0; i < Math.Min(commonPrefix.Length, sourceDirectory.Length); i++)
+                        {
+                            if (commonPrefix[i] == sourceDirectory[i])
+                                continue;
 
-                        int lastMatch = commonPrefix.LastIndexOf('\\', i - 1);
-                        commonPrefix = commonPrefix.Substring(0, lastMatch);
-                        break;
+                            int lastMatch = commonPrefix.LastIndexOf('\\', i - 1);
+                            commonPrefix = commonPrefix.Substring(0, lastMatch);
+                            break;
+                        }
                     }
                 }
 
                 sources.Add(new XElement("source", commonPrefix));
+                commonPrefix += Path.DirectorySeparatorChar;
             }
 
             return sources;
         }
 
-        private static XElement CreatePackagesElement(XDocument openCoverReport, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
+        private static XElement CreatePackagesElement(XDocument openCoverReport, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             var packagesElement = new XElement("packages");
 
@@ -108,7 +113,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return packagesElement;
         }
 
-        private static XElement CreatePackageElement(XElement module, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
+        private static XElement CreatePackageElement(XElement module, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             long packageCoveredLines = 0;
             long packageTotalLines = 0;
@@ -164,7 +169,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return packageElement;
         }
 
-        private static XElement CreateClassElement(XElement clazz, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, string commonPrefix)
+        private static XElement CreateClassElement(XElement clazz, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             long classCoveredLines = 0;
             long classTotalLines = 0;
@@ -179,7 +184,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             // First method is used to determine name of file (partial classes are not handled correctly)
             string fileName = firstMethodWithFileRef == null ? string.Empty : filesById[firstMethodWithFileRef.Element("FileRef").Attribute("uid").Value];
-            fileName = fileName.Replace(commonPrefix + '\\', null);
+            fileName = commonPrefix.Replace(fileName, string.Empty);
 
             var classElement = new XElement(
                 "class",
