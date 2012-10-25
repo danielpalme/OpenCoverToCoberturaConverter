@@ -38,6 +38,13 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 return 1;
             }
 
+            string sourcesDirectory = null;
+
+            if (!namedArguments.TryGetValue("SOURCES", out sourcesDirectory))
+            {
+                Console.WriteLine("Sources directory not set, will try to guess. This might not work properly when merging results from multiple test assemblies.");
+            }
+
             if (!File.Exists(inputFile))
             {
                 Console.WriteLine("Report does not exist: " + inputFile);
@@ -56,7 +63,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 return 1;
             }
 
-            XDocument targetReport = Converter.ConvertToCobertura(inputReport);
+            XDocument targetReport = Converter.ConvertToCobertura(inputReport, sourcesDirectory);
 
             try
             {
@@ -77,6 +84,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             Console.WriteLine("Parameters:");
             Console.WriteLine("[\"]-input:<OpenCover Report>[\"]");
             Console.WriteLine("[\"]-output:<Cobertura Report>[\"]");
+            Console.WriteLine("[\"]-sources:<Solution Base Directory>[\"]");
 
             Console.WriteLine();
             Console.WriteLine("Example:");
