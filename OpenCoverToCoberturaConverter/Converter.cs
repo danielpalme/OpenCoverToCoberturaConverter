@@ -136,7 +136,6 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var classes = module
                 .Elements("Classes")
                 .Elements("Class")
-                //.Where(m => m.Attribute("skippedDueTo") == null)
                 .Where(c => !c.Element("FullName").Value.Contains("__")
                      && !c.Element("FullName").Value.Contains("<")
                      && !c.Element("FullName").Value.Contains("/")
@@ -201,10 +200,9 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var methods = clazz
                 .Elements("Methods")
                 .Elements("Method")
-                //.Where(m => m.Attribute("skippedDueTo") == null)
                 .Where(m => m.Attribute("skippedDueTo") == null
                     && !m.HasAttributeWithValue("isGetter", "true")
-                     && !m.HasAttributeWithValue("isSetter", "true")
+                    && !m.HasAttributeWithValue("isSetter", "true")
                     && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__"))
                 .ToArray();
 
