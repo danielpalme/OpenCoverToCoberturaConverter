@@ -136,10 +136,11 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var classes = module
                 .Elements("Classes")
                 .Elements("Class")
-                .Where(m => m.Attribute("skippedDueTo") == null)
-                /* .Where(c => !c.Element("FullName").Value.Contains("__")
+                //.Where(m => m.Attribute("skippedDueTo") == null)
+                .Where(c => !c.Element("FullName").Value.Contains("__")
                      && !c.Element("FullName").Value.Contains("<")
-                     && !c.Element("FullName").Value.Contains("/")) */
+                     && !c.Element("FullName").Value.Contains("/")
+                     && c.Attribute("skippedDueTo") == null)
                 .ToArray();
 
             foreach (var clazz in classes)
@@ -200,10 +201,11 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var methods = clazz
                 .Elements("Methods")
                 .Elements("Method")
-                .Where(m => m.Attribute("skippedDueTo") == null)
-                /* .Where(m => !m.HasAttributeWithValue("isGetter", "true")
+                //.Where(m => m.Attribute("skippedDueTo") == null)
+                .Where(m => m.Attribute("skippedDueTo") == null
+                    && !m.HasAttributeWithValue("isGetter", "true")
                      && !m.HasAttributeWithValue("isSetter", "true")
-                     && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__")) */
+                    && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__"))
                 .ToArray();
 
             foreach (var method in methods)
