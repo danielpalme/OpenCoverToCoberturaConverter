@@ -1,29 +1,7 @@
-bin
-obj
+/packages/NuGet.CommandLine*
+/target
 *.suo
 *.user
-
-#ignore thumbnails created by windows
-Thumbs.db
-#Ignore files build by Visual Studio
-*.obj
-*.exe
-*.pdb
-*.aps
-*.pch
-*.vspscc
-*_i.c
-*_p.c
-*.ncb
-*.tlb
-*.tlh
-*.bak
-*.cache
-*.ilk
-*.log
-[Dd]ebug*/
-*.lib
-*.sbr
-[Rr]elease*/
-_ReSharper*/
-[Tt]est[Rr]esult*
+*.Cache
+bin
+obj

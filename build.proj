@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Deploy" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+
+  <!-- Version, adjust before build -->
+  <PropertyGroup>
+    <Version>0.1.1.0</Version>
+  </PropertyGroup>
+  
+  <!-- Tools -->
+  <PropertyGroup>
+    <NuGetCommandLine>packages\NuGet.CommandLine.2.8.1\tools\NuGet.exe</NuGetCommandLine>
+  </PropertyGroup>
+  
+  <Target Name="Clean">
+    <RemoveDir Directories="target" />
+  </Target>
+
+  <Target Name="Compile">
+    <MSBuild Projects="OpenCoverToCoberturaConverter.sln" Properties="Configuration=Release" />
+  </Target>
+
+  <Target Name="Deploy" DependsOnTargets="Clean; Compile">
+    <MakeDir Directories="target" />
+    <Exec Command="$(NuGetCommandLine) pack OpenCoverToCoberturaConverter.nuspec -OutputDirectory target -Version $(Version)" />
+  </Target>
+</Project>
