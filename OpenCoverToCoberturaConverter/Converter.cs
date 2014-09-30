@@ -307,10 +307,6 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
         private static void AddBranchCoverageToLineElement(XElement firstMethodLineElement, double coverage, double visitedBranches, double totalBranches)
         {
-          var newCulture = (CultureInfo)System.Threading.Thread.CurrentThread.CurrentCulture.Clone();
-          newCulture.NumberFormat.PercentPositivePattern = 1;  // Avoid putting a space between a number and its percentage
-          System.Threading.Thread.CurrentThread.CurrentCulture = newCulture;
-
           if (firstMethodLineElement != null)
           {
             firstMethodLineElement.SetAttributeValue("branch", "true");
