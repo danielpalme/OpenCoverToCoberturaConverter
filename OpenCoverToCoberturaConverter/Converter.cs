@@ -210,10 +210,10 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             {
                 methodsElement.Add(CreateMethodElement(method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches));
             }
-
+          
             double lineRate = classTotalLines == 0 ? 1 : classCoveredLines / (double)classTotalLines;
             double branchRate = classTotalBranches == 0 ? 1 : classCoveredBranches / (double)classTotalBranches;
-
+          
             classElement.Add(
                 new XAttribute(
                     "line-rate",
@@ -269,10 +269,20 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var linesElement = new XElement("lines");
             methodElement.Add(linesElement);
 
-            foreach (var seqPoint in seqPoints)
+            for (int i = 0; i < seqPoints.Count(); i++)
             {
-                linesElement.Add(CreateLineElement(seqPoint));
-                classLinesElement.Add(CreateLineElement(seqPoint));
+              var seqPoint = seqPoints[i];
+              var methodLineElement = CreateLineElement(seqPoint);
+              linesElement.Add(methodLineElement);
+              
+              var classLineElement = CreateLineElement(seqPoint);
+              classLinesElement.Add(classLineElement);
+
+              if (i == 0)
+              {
+                AddBranchCoverageToLineElement(methodLineElement, branchRate, methodCoveredBranches, methodTotalBranches);
+                AddBranchCoverageToLineElement(classLineElement, branchRate, methodCoveredBranches, methodTotalBranches);
+              }
             }
 
             coveredLines += methodCoveredLines;
@@ -293,6 +303,19 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 new XAttribute("branch", "false"));
 
             return lineElement;
+        }
+
+        private static void AddBranchCoverageToLineElement(XElement firstMethodLineElement, double coverage, double visitedBranches, double totalBranches)
+        {
+          var newCulture = (CultureInfo)System.Threading.Thread.CurrentThread.CurrentCulture.Clone();
+          newCulture.NumberFormat.PercentPositivePattern = 1;  // Avoid putting a space between a number and its percentage
+          System.Threading.Thread.CurrentThread.CurrentCulture = newCulture;
+
+          if (firstMethodLineElement != null)
+          {
+            firstMethodLineElement.SetAttributeValue("branch", "true");
+            firstMethodLineElement.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(coverage * 100), visitedBranches, totalBranches)));
+          }
         }
     }
 }
