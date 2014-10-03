@@ -41,8 +41,8 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
       var rootPrefixRegex = new Regex("^" + Regex.Escape(commonPrefix), RegexOptions.IgnoreCase);
       rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, rootPrefixRegex));
 
-      double lineRate = totalLines == 0 ? 1 : coveredLines/(double) totalLines;
-      double branchRate = totalBranches == 0 ? 1 : coveredBranches/(double) totalBranches;
+      double lineRate = totalLines == 0 ? 1 : coveredLines / (double)totalLines;
+      double branchRate = totalBranches == 0 ? 1 : coveredBranches / (double)totalBranches;
 
       rootElement.Add(new XAttribute("line-rate", lineRate.ToString(CultureInfo.InvariantCulture)));
       rootElement.Add(new XAttribute("branch-rate", branchRate.ToString(CultureInfo.InvariantCulture)));
@@ -52,7 +52,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
       rootElement.Add(new XAttribute("branches-valid", totalBranches.ToString(CultureInfo.InvariantCulture)));
       rootElement.Add(new XAttribute("complexity", 0)); // TODO
       rootElement.Add(new XAttribute("version", 0)); // TODO
-      rootElement.Add(new XAttribute("timestamp", ((long) (DateTime.Now - new DateTime(1970, 1, 1)).TotalSeconds).ToString(CultureInfo.InvariantCulture)));
+      rootElement.Add(new XAttribute("timestamp", ((long)(DateTime.Now - new DateTime(1970, 1, 1)).TotalSeconds).ToString(CultureInfo.InvariantCulture)));
 
       return rootElement;
     }
@@ -149,8 +149,8 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
         classesElement.Add(CreateClassElement(clazz, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
       }
 
-      double lineRate = packageTotalLines == 0 ? 1 : packageCoveredLines/(double) packageTotalLines;
-      double branchRate = packageTotalBranches == 0 ? 1 : packageCoveredBranches/(double) packageTotalBranches;
+      double lineRate = packageTotalLines == 0 ? 1 : packageCoveredLines / (double)packageTotalLines;
+      double branchRate = packageTotalBranches == 0 ? 1 : packageCoveredBranches / (double)packageTotalBranches;
 
       packageElement.Add(
         new XAttribute(
@@ -213,8 +213,8 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
         methodsElement.Add(CreateMethodElement(method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches));
       }
 
-      double lineRate = classTotalLines == 0 ? 1 : classCoveredLines/(double) classTotalLines;
-      double branchRate = classTotalBranches == 0 ? 1 : classCoveredBranches/(double) classTotalBranches;
+      double lineRate = classTotalLines == 0 ? 1 : classCoveredLines / (double)classTotalLines;
+      double branchRate = classTotalBranches == 0 ? 1 : classCoveredBranches / (double)classTotalBranches;
 
       classElement.Add(
         new XAttribute(
@@ -250,16 +250,16 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
       var branchPoints = method
         .Elements("BranchPoints")
         .Elements("BranchPoint")
-        .ToList();
+        .ToArray();
 
       long methodCoveredLines = seqPoints.Count(s => s.Attribute("vc").Value != "0");
       long methodTotalLines = seqPoints.LongLength;
 
       long methodCoveredBranches = branchPoints.Count(s => s.Attribute("vc").Value != "0");
-      long methodTotalBranches = branchPoints.Count;
+      long methodTotalBranches = branchPoints.LongLength;
 
-      double lineRate = methodTotalLines == 0 ? 1 : methodCoveredLines/(double) methodTotalLines;
-      double branchRate = methodTotalBranches == 0 ? 1 : methodCoveredBranches/(double) methodTotalBranches;
+      double lineRate = methodTotalLines == 0 ? 1 : methodCoveredLines / (double)methodTotalLines;
+      double branchRate = methodTotalBranches == 0 ? 1 : methodCoveredBranches / (double)methodTotalBranches;
 
       var methodElement = new XElement(
         "method",
@@ -274,59 +274,29 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
       for (int i = 0; i < seqPoints.Count(); i++)
       {
         var seqPoint = seqPoints[i];
+
         var methodLineElement = CreateLineElement(seqPoint);
         linesElement.Add(methodLineElement);
 
         var classLineElement = CreateLineElement(seqPoint);
         classLinesElement.Add(classLineElement);
-        
-        var matchingBranchPoints = branchPoints.FindAll(bp => bp.Attribute("sl") != null && bp.Attribute("sl").Value == seqPoint.Attribute("sl").Value);
 
-        if (matchingBranchPoints.Any())
-        {
-          var lineCoveredBranches = matchingBranchPoints.Count(s => s.Attribute("vc").Value != "0");
-          var totalMatchingBranchPoints = matchingBranchPoints.Count;
+        var matchingBranchPoints = FindBranchPointsForLine(branchPoints, seqPoint.Attribute("sl").Value);
 
-          double matchBranchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / totalMatchingBranchPoints;
-
-          AddBranchCoverageToLineElement(methodLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
-          AddBranchCoverageToLineElement(classLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
-        }
+        AddBranchCoverageToLineElements(methodLineElement, classLineElement, matchingBranchPoints);
       }
 
       var linesElementList = linesElement.Elements("line").ToList();
 
-      var orphanedBranches = branchPoints.Where(bp => !linesElementList.Any(le => le.HasAttributeWithValue("number", bp.Attribute("sl").Value)));
-
-
-
-      //foreach (var orphanedBranch in branchPoints)
-      //{
-      //  if (orphanedBranch != null)
-      //  {
-      //    var lineElement = new XElement(
-      //      "line",
-      //      new XAttribute("number", orphanedBranch.Attribute("sl") != null ? orphanedBranch.Attribute("sl").Value : string.Empty),
-      //      new XAttribute("hits", orphanedBranch.Attribute("vc").Value),
-      //      new XAttribute("branch", orphanedBranch.Attribute("vc").Value != "0"));
-
-      //    linesElement.Add(lineElement);
-
-      //    AddBranchCoverageToLineElement(lineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
-      //  }
-      //}
-
-
-
-      coveredLines += methodCoveredLines;
-      totalLines += methodTotalLines;
-
-      coveredBranches += methodCoveredBranches;
-      totalBranches += methodTotalBranches;
+      var orphanedBranchesGroupedByLineNumber = branchPoints.Where(bp => bp.Attribute("sl") == null || !linesElementList.Any(le => le.HasAttributeWithValue("number", bp.Attribute("sl").Value))).GroupBy(bp => (string)bp.Attribute("sl") ?? "-1");
+      foreach (var group in orphanedBranchesGroupedByLineNumber)
+      {
+        CreateOrphanedBranchLineElements(linesElement, classLinesElement, group.Key, group.ToArray());
+      }
 
       return methodElement;
     }
-    
+
     private static XElement CreateLineElement(XElement seqPoint)
     {
       var lineElement = new XElement(
@@ -338,79 +308,56 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
       return lineElement;
     }
 
-    private static void AddBranchCoverageToLineElement(XElement firstMethodLineElement, double coverage, double visitedBranches, double totalBranches)
+    private static XElement[] FindBranchPointsForLine(XElement[] branchPoints, string sequenceLineNumber)
     {
-      if (firstMethodLineElement != null)
+      return Array.FindAll(branchPoints, bp => bp.Attribute("sl") != null && bp.Attribute("sl").Value == sequenceLineNumber);
+    }
+
+    private static void AddBranchCoverageToLineElements(XElement methodLineElement, XElement classLineElement, XElement[] matchingBranchPoints)
+    {
+      if (matchingBranchPoints != null && matchingBranchPoints.Any())
       {
-        firstMethodLineElement.SetAttributeValue("branch", "true");
-        firstMethodLineElement.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(coverage*100), visitedBranches, totalBranches)));
+        long lineCoveredBranches = matchingBranchPoints.Count(s => s.Attribute("vc").Value != "0");
+        long totalMatchingBranchPoints = matchingBranchPoints.LongLength;
+
+        double matchBranchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / (double)totalMatchingBranchPoints;
+
+        AddBranchCoverageAttribute(methodLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
+        AddBranchCoverageAttribute(classLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
       }
     }
 
-    private static void AddOrphanedBranchCoverageToLineElements(XElement linesElement, XElement[] branchPoints)
+    private static void AddBranchCoverageAttribute(XElement lineElement, double coverage, double visitedBranches, double totalBranches)
     {
-      if (linesElement == null || branchPoints == null)
+      if (lineElement != null)
       {
-        return;
+        lineElement.SetAttributeValue("branch", "true");
+        lineElement.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(coverage * 100), visitedBranches, totalBranches)));
       }
+    }
 
-      var copyOfBranches = branchPoints.ToList(); // need to be able to remove the orphaned branches without affecting the reference object.
+    private static void CreateOrphanedBranchLineElements(XElement methodLines, XElement classLines, string lineNumber, XElement[] branchPoints)
+    {
+      var totalBranchHitsForLine = branchPoints.Sum(bp => Convert.ToInt32(bp.Attribute("vc").Value));
 
-      var lines = linesElement.Elements("line").ToArray();
+      var methodLineElement = CreateLineElementForOrphanedBranches(lineNumber, totalBranchHitsForLine);
+      methodLines.Add(methodLineElement);
 
-      foreach (var line in lines)
-      {
-        // get the matching branchpoints
-        var matchingBranches = Array.FindAll(branchPoints, bp => bp.HasAttributeWithValue("sl", line.Attribute("number").Value));
+      var classLineElement = CreateLineElementForOrphanedBranches(lineNumber, totalBranchHitsForLine);
+      classLines.Add(classLineElement);
 
-        if (matchingBranches.Any())
-        {
-          var lineCoveredBranches = matchingBranches.Count(s => s.Attribute("vc").Value != "0");
-          var totalMatchingBranchPoints = matchingBranches.Length;
+      AddBranchCoverageToLineElements(methodLineElement, classLineElement, branchPoints);
+    }
 
-          double branchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / totalMatchingBranchPoints;
+    private static XElement CreateLineElementForOrphanedBranches(string lineNumber, int totalBranchHitsForLine)
+    {
+      var result = new XElement(
+        "line",
+        new XAttribute("number", lineNumber),
+        new XAttribute("hits", totalBranchHitsForLine),
+        new XAttribute("branch", "true"));
 
-          line.SetAttributeValue("branch", lineCoveredBranches != 0);
-          line.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(branchRate * 100), lineCoveredBranches, totalMatchingBranchPoints)));
-        }
-      }
-
-      foreach (var branchPoint in copyOfBranches)
-      {
-        if (branchPoint != null)
-        {
-          var matchingLine = Array.Find(lines, le => branchPoint.HasAttributeWithValue("sl", le.Attribute("number").Value));
-
-          if (matchingLine != null)
-          {
-            var matchingBranchPoints = Array.FindAll(branchPoints, bp => bp.Attribute("sl") != null && bp.Attribute("sl").Value == matchingLine.Attribute("number").Value);
-
-            var lineCoveredBranches = matchingBranchPoints.Count(s => s.Attribute("vc").Value != "0");
-            var totalMatchingBranchPoints = matchingBranchPoints.LongLength;
-
-            var branchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / (double)totalMatchingBranchPoints;
-
-            matchingLine.SetAttributeValue("branch", lineCoveredBranches != 0);
-            matchingLine.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(branchRate * 100), lineCoveredBranches, totalMatchingBranchPoints)));
-
-            branchPoint.Remove();
-          }
-        }
-      }
-
-      foreach (var orphanedBranch in copyOfBranches)
-      {
-        if (orphanedBranch != null)
-        {
-          var lineElement = new XElement(
-            "line",
-            new XAttribute("number", orphanedBranch.Attribute("sl") != null ? orphanedBranch.Attribute("sl").Value : string.Empty ),
-            new XAttribute("hits", orphanedBranch.Attribute("vc").Value),
-            new XAttribute("branch", orphanedBranch.Attribute("vc").Value != "0"));
-
-          linesElement.Add(lineElement);
-        }
-      }
+      return result;
     }
   }
 }
