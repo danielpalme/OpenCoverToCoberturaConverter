@@ -135,18 +135,21 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
               .Elements("File")
               .ToDictionary(f => f.Attribute("uid").Value, f => f.Attribute("fullPath").Value);
 
-            var classes = module
-              .Elements("Classes")
-              .Elements("Class")
-              .Where(c => !c.Element("FullName").Value.Contains("__")
-                          && !c.Element("FullName").Value.Contains("<")
-                          && !c.Element("FullName").Value.Contains("/")
-                          && c.Attribute("skippedDueTo") == null)
-              .ToArray();
+            var classNames = module
+                .Elements("Classes")
+                .Elements("Class")
+                .Where(c => !c.Element("FullName").Value.Contains("__")
+                    && !c.Element("FullName").Value.Contains("<")
+                    && !c.Element("FullName").Value.Contains("/")
+                    && c.Attribute("skippedDueTo") == null)
+                .Select(c => c.Element("FullName").Value)
+                .Distinct()
+                .OrderBy(name => name)
+                .ToArray();
 
-            foreach (var clazz in classes)
+            foreach (var className in classNames)
             {
-                classesElement.Add(CreateClassElement(clazz, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
+                classesElement.Add(CreateClassElement(className, module, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
             }
 
             double lineRate = packageTotalLines == 0 ? 1 : packageCoveredLines / (double)packageTotalLines;
@@ -171,7 +174,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return packageElement;
         }
 
-        private static XElement CreateClassElement(XElement clazz, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
+        private static XElement CreateClassElement(string className, XElement module, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             long classCoveredLines = 0;
             long classTotalLines = 0;
@@ -179,10 +182,14 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             long classCoveredBranches = 0;
             long classTotalBranches = 0;
 
-            var firstMethodWithFileRef = clazz
-              .Elements("Methods")
-              .Elements("Method")
-              .FirstOrDefault(m => m.Elements("FileRef").Any());
+            var firstMethodWithFileRef = module
+                .Elements("Classes")
+                .Elements("Class")
+                .Where(c => c.Element("FullName").Value.Equals(className)
+                            || c.Element("FullName").Value.StartsWith(className + "/", StringComparison.Ordinal))
+                .Elements("Methods")
+                .Elements("Method")
+                .FirstOrDefault(m => m.Elements("FileRef").Any());
 
             // First method is used to determine name of file (partial classes are not handled correctly)
             string fileName = firstMethodWithFileRef == null ? string.Empty : filesById[firstMethodWithFileRef.Element("FileRef").Attribute("uid").Value];
@@ -190,7 +197,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             var classElement = new XElement(
               "class",
-              new XAttribute("name", clazz.Element("FullName").Value),
+              new XAttribute("name", className),
               new XAttribute("filename", fileName)); // TOOO
 
             var methodsElement = new XElement("methods");
@@ -199,14 +206,17 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var linesElement = new XElement("lines");
             classElement.Add(linesElement);
 
-            var methods = clazz
-              .Elements("Methods")
-              .Elements("Method")
-              .Where(m => m.Attribute("skippedDueTo") == null
+            var methods = module
+                .Elements("Classes")
+                .Elements("Class")
+                .Where(c => c.Element("FullName").Value.Equals(className))
+                .Elements("Methods")
+                .Elements("Method")
+                .Where(m => m.Attribute("skippedDueTo") == null
                           && !m.HasAttributeWithValue("isGetter", "true")
                           && !m.HasAttributeWithValue("isSetter", "true")
                           && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__"))
-              .ToArray();
+                .ToArray();
 
             foreach (var method in methods)
             {
