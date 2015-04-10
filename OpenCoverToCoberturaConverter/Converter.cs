@@ -17,6 +17,11 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 throw new ArgumentNullException("openCoverReport");
             }
 
+            if (sourcesDirectory != null)
+            {
+                sourcesDirectory = sourcesDirectory.Replace("/", "\\");
+            }
+
             XDocument result = new XDocument(new XDeclaration("1.0", null, null), CreateRootElement(openCoverReport, sourcesDirectory));
             result.AddFirst(new XDocumentType("coverage", null, "http://cobertura.sourceforge.net/xml/coverage-04.dtd", null));
 
@@ -65,7 +70,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
               .Elements("Files")
               .Elements("File")
               .Attributes("fullPath")
-              .Select(a => Path.GetDirectoryName(a.Value))
+              .Select(a => Path.GetDirectoryName(a.Value).Replace("/", "\\"))
               .Distinct();
 
             commonPrefix = sourcesDirectory ?? sourceDirectories.FirstOrDefault();
@@ -133,7 +138,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var filesById = module
               .Elements("Files")
               .Elements("File")
-              .ToDictionary(f => f.Attribute("uid").Value, f => f.Attribute("fullPath").Value);
+              .ToDictionary(f => f.Attribute("uid").Value, f => f.Attribute("fullPath").Value.Replace("/", "\\"));
 
             var classNames = module
                 .Elements("Classes")
