@@ -225,7 +225,11 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             foreach (var method in methods)
             {
-                methodsElement.Add(CreateMethodElement(method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches));
+                var newMethodElement = CreateMethodElement(module, method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches);
+                if (newMethodElement != null)
+                {
+                    methodsElement.Add(newMethodElement);
+                }
             }
 
             double lineRate = classTotalLines == 0 ? 1 : classCoveredLines / (double)classTotalLines;
@@ -250,22 +254,49 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return classElement;
         }
 
-        private static XElement CreateMethodElement(XElement method, XElement classLinesElement, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches)
+        private static XElement CreateMethodElement(XElement module, XElement method, XElement classLinesElement, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches)
         {
-            var match = Regex.Match(method.Element("Name").Value, @"^.*::(?<methodname>.*)(?<signature>\(.*\))$");
+            var match = Regex.Match(method.Element("Name").Value, @"(?<methodreturnandclass>^.*)::(?<methodname>.*)(?<signature>\(.*\))$");
+
+            string methodreturnandclass = match.Success ? match.Groups["methodreturnandclass"].Value : method.Element("Name").Value;
+
+            string methodreturn = methodreturnandclass.Split(' ')[0];
+            string className = methodreturnandclass.Split(' ')[1];
 
             string methodName = match.Success ? match.Groups["methodname"].Value : method.Element("Name").Value;
             string signature = match.Success ? match.Groups["signature"].Value : method.Element("Name").Value;
 
-            var seqPoints = method
-              .Elements("SequencePoints")
-              .Elements("SequencePoint")
-              .ToArray();
+            XElement realMethod = method;
 
-            var branchPoints = method
-              .Elements("BranchPoints")
-              .Elements("BranchPoint")
-              .ToArray();
+            // Async method?
+            if (methodreturn.Contains("System.Threading.Tasks.Task"))
+            {
+                var asyncClassName = className + "/" + "<" + methodName + ">";
+
+                realMethod = module
+                    .Elements("Classes")
+                    .Elements("Class")
+                    .Where(c => c.Element("FullName").Value.StartsWith(asyncClassName))
+                    .Elements("Methods")
+                    .Elements("Method")
+                    .FirstOrDefault(c => c.Element("Name").Value.Contains("<" + methodName + ">") 
+                        && c.Element("Name").Value.Contains("::MoveNext()"));
+            }
+
+            if (realMethod == null)
+            {
+                return null;
+            }
+
+            var seqPoints = realMethod
+                .Elements("SequencePoints")
+                .Elements("SequencePoint")
+                .ToArray();
+
+            var branchPoints = realMethod
+                .Elements("BranchPoints")
+                .Elements("BranchPoint")
+                .ToArray();
 
             long methodCoveredLines = seqPoints.Count(s => s.Attribute("vc").Value != "0");
             long methodTotalLines = seqPoints.LongLength;
