@@ -88,15 +88,27 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                                 continue;
                             }
 
-                            int lastMatch = commonPrefix.LastIndexOf('\\', i - 1);
-                            commonPrefix = commonPrefix.Substring(0, lastMatch);
+                            int lastMatch = commonPrefix.LastIndexOf('\\', Math.Max(i - 1, 0));
+
+                            if (lastMatch == -1)
+                            {
+                                commonPrefix = string.Empty;
+                            }
+                            else
+                            {
+                                commonPrefix = commonPrefix.Substring(0, lastMatch);
+                            }
+
                             break;
                         }
                     }
                 }
 
-                sources.Add(new XElement("source", commonPrefix));
-                commonPrefix += Path.DirectorySeparatorChar;
+                if (commonPrefix != string.Empty)
+                {
+                    sources.Add(new XElement("source", commonPrefix));
+                    commonPrefix += Path.DirectorySeparatorChar;
+                }
             }
 
             return sources;

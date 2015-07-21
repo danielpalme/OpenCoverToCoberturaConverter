@@ -15,7 +15,7 @@
     <tags>Code Coverage Reporting Testing</tags>
   </metadata>
   <files>
-    <file src="OpenCoverToCoberturaConverter\bin\Release\OpenCoverToCoberturaConverter.exe" target="OpenCoverToCoberturaConverter.exe" />
+    <file src="OpenCoverToCoberturaConverter\bin\Release\OpenCoverToCoberturaConverter.exe" target="tools\OpenCoverToCoberturaConverter.exe" />
     <file src="LICENSE.txt" target="LICENSE.txt" />
   </files>
 </package>
