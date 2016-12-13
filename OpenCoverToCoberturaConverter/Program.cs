@@ -45,6 +45,16 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 Console.WriteLine("Sources directory not set, will try to guess. This might not work properly when merging results from multiple test assemblies.");
             }
 
+            string includeGettersSettersString = null;
+            bool includeGetSet = false;
+            if (namedArguments.TryGetValue("INCLUDEGETTERSSETTERS", out includeGettersSettersString))
+            {
+                if (!bool.TryParse(includeGettersSettersString, out includeGetSet))
+                {
+                    Console.WriteLine("Unable to determine if getters/setters should be included or not. Ignoring for now.");
+                }
+            }
+
             if (!File.Exists(inputFile))
             {
                 Console.WriteLine("Report does not exist: " + inputFile);
@@ -63,7 +73,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 return 1;
             }
 
-            XDocument targetReport = Converter.ConvertToCobertura(inputReport, sourcesDirectory);
+            XDocument targetReport = Converter.ConvertToCobertura(inputReport, sourcesDirectory, includeGetSet);
 
             try
             {
@@ -85,6 +95,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             Console.WriteLine("[\"]-input:<OpenCover Report>[\"]");
             Console.WriteLine("[\"]-output:<Cobertura Report>[\"]");
             Console.WriteLine("[\"]-sources:<Solution Base Directory>[\"]");
+            Console.WriteLine("[\"]-includeGettersSetters:<true/false> (default: false)[\"]");
 
             Console.WriteLine();
             Console.WriteLine("Example:");
