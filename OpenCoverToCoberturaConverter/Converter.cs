@@ -10,11 +10,11 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 {
     public static class Converter
     {
-        public static XDocument ConvertToCobertura(XDocument openCoverReport, string sourcesDirectory)
+        public static XDocument ConvertToCobertura(XDocument openCoverReport, string sourcesDirectory, bool includeGettersSetters)
         {
             if (openCoverReport == null)
             {
-                throw new ArgumentNullException("openCoverReport");
+                throw new ArgumentNullException(nameof(openCoverReport));
             }
 
             if (sourcesDirectory != null)
@@ -22,13 +22,13 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 sourcesDirectory = sourcesDirectory.Replace("/", "\\");
             }
 
-            XDocument result = new XDocument(new XDeclaration("1.0", null, null), CreateRootElement(openCoverReport, sourcesDirectory));
+            XDocument result = new XDocument(new XDeclaration("1.0", null, null), CreateRootElement(openCoverReport, sourcesDirectory, includeGettersSetters));
             result.AddFirst(new XDocumentType("coverage", null, "http://cobertura.sourceforge.net/xml/coverage-04.dtd", null));
 
             return result;
         }
 
-        private static XElement CreateRootElement(XDocument openCoverReport, string sourcesDirectory)
+        private static XElement CreateRootElement(XDocument openCoverReport, string sourcesDirectory, bool includeGettersSetters)
         {
             long coveredLines = 0;
             long totalLines = 0;
@@ -42,7 +42,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             rootElement.Add(CreateSourcesElement(openCoverReport, sourcesDirectory, out commonPrefix));
             var rootPrefixRegex = new Regex("^" + Regex.Escape(commonPrefix), RegexOptions.IgnoreCase);
-            rootElement.Add(CreatePackagesElement(openCoverReport, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, rootPrefixRegex));
+            rootElement.Add(CreatePackagesElement(openCoverReport, includeGettersSetters, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, rootPrefixRegex));
 
             double lineRate = totalLines == 0 ? 1 : coveredLines / (double)totalLines;
             double branchRate = totalBranches == 0 ? 1 : coveredBranches / (double)totalBranches;
@@ -114,7 +114,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return sources;
         }
 
-        private static XElement CreatePackagesElement(XDocument openCoverReport, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
+        private static XElement CreatePackagesElement(XDocument openCoverReport, bool includeGettersSetters, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             var packagesElement = new XElement("packages");
 
@@ -126,13 +126,13 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             foreach (var module in modules)
             {
-                packagesElement.Add(CreatePackageElement(module, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
+                packagesElement.Add(CreatePackageElement(module, includeGettersSetters, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
             }
 
             return packagesElement;
         }
 
-        private static XElement CreatePackageElement(XElement module, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
+        private static XElement CreatePackageElement(XElement module, bool includeGettersSetters, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             long packageCoveredLines = 0;
             long packageTotalLines = 0;
@@ -166,7 +166,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             foreach (var className in classNames)
             {
-                classesElement.Add(CreateClassElement(className, module, filesById, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
+                classesElement.Add(CreateClassElement(className, module, filesById, includeGettersSetters, ref packageCoveredLines, ref packageTotalLines, ref packageCoveredBranches, ref packageTotalBranches, commonPrefix));
             }
 
             double lineRate = packageTotalLines == 0 ? 1 : packageCoveredLines / (double)packageTotalLines;
@@ -191,7 +191,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return packageElement;
         }
 
-        private static XElement CreateClassElement(string className, XElement module, Dictionary<string, string> filesById, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
+        private static XElement CreateClassElement(string className, XElement module, Dictionary<string, string> filesById, bool includeGettersSetters, ref long coveredLines, ref long totalLines, ref long coveredBranches, ref long totalBranches, Regex commonPrefix)
         {
             long classCoveredLines = 0;
             long classTotalLines = 0;
@@ -230,12 +230,15 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 .Elements("Methods")
                 .Elements("Method")
                 .Where(m => m.Attribute("skippedDueTo") == null
-                          && !m.HasAttributeWithValue("isGetter", "true")
-                          && !m.HasAttributeWithValue("isSetter", "true")
-                          && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__"))
-                .ToArray();
+                            && !Regex.IsMatch(m.Element("Name").Value, "::<.+>.+__"));
 
-            foreach (var method in methods)
+            if (!includeGettersSetters)
+            {
+                methods = methods.Where(m => !m.HasAttributeWithValue("isGetter", "true")
+                                             && !m.HasAttributeWithValue("isSetter", "true"));
+            }
+
+            foreach (var method in methods.ToArray())
             {
                 var newMethodElement = CreateMethodElement(module, method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches);
                 if (newMethodElement != null)
@@ -291,7 +294,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                     .Where(c => c.Element("FullName").Value.StartsWith(asyncClassName))
                     .Elements("Methods")
                     .Elements("Method")
-                    .FirstOrDefault(c => c.Element("Name").Value.Contains("<" + methodName + ">") 
+                    .FirstOrDefault(c => c.Element("Name").Value.Contains("<" + methodName + ">")
                         && c.Element("Name").Value.Contains("::MoveNext()"));
             }
 

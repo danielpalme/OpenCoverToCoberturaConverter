@@ -18,7 +18,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
         {
             if (element == null)
             {
-                throw new ArgumentNullException("element");
+                throw new ArgumentNullException(nameof(element));
             }
 
             XAttribute attribute = element.Attribute(attributeName);
