@@ -275,8 +275,19 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             string methodreturnandclass = match.Success ? match.Groups["methodreturnandclass"].Value : method.Element("Name").Value;
 
-            string methodreturn = methodreturnandclass.Split(' ')[0];
-            string className = methodreturnandclass.Split(' ')[1];
+            string methodreturn;
+            string className;
+
+            if (methodreturnandclass.Contains(' '))
+            {
+                methodreturn = methodreturnandclass.Split(' ')[0];
+                className = methodreturnandclass.Split(' ')[1];
+            }
+            else
+            {
+                methodreturn = methodreturnandclass.Split('.')[0];
+                className = methodreturnandclass.Split('.')[1];
+            }
 
             string methodName = match.Success ? match.Groups["methodname"].Value : method.Element("Name").Value;
             string signature = match.Success ? match.Groups["signature"].Value : method.Element("Name").Value;
