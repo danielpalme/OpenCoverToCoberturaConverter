@@ -118,15 +118,22 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
         {
             var packagesElement = new XElement("packages");
 
-            var modules = openCoverReport.Root
-              .Element("Modules")
-              .Elements("Module")
-              .Where(m => m.Attribute("skippedDueTo") == null)
-              .ToArray();
+            var groupedModules = openCoverReport.Root
+                .Element("Modules")
+                .Elements("Module")
+                .Where(m => m.Attribute("skippedDueTo") == null)
+                .GroupBy(g => g.Attribute("hash").Value,
+                    (hash, modules) => new {Hash = hash, Module = modules}).ToArray();
 
-            foreach (var module in modules)
+            foreach (var moduleGroup in groupedModules)
             {
-                packagesElement.Add(CreatePackageElement(module, includeGettersSetters, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
+                var firstModule = moduleGroup.Module.First();
+                foreach (var module in moduleGroup.Module.Skip(1))
+                {
+                    firstModule.Add(module.Nodes());
+                }
+
+                packagesElement.Add(CreatePackageElement(firstModule, includeGettersSetters, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, commonPrefix));
             }
 
             return packagesElement;
@@ -238,9 +245,18 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                                              && !m.HasAttributeWithValue("isSetter", "true"));
             }
 
-            foreach (var method in methods.ToArray())
+            var groupedMethods = methods.GroupBy(m => m.Element("Name").Value,
+                ((methodName, method) => new {MethodName = methodName, Method = method})).ToArray();
+
+            foreach (var methodGroup in groupedMethods)
             {
-                var newMethodElement = CreateMethodElement(module, method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches);
+                var firstMethod = methodGroup.Method.First();
+                foreach (var method in methodGroup.Method.Skip(1))
+                {
+                    firstMethod.Add(method.Nodes());
+                }
+
+                var newMethodElement = CreateMethodElement(module, firstMethod, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches);
                 if (newMethodElement != null)
                 {
                     methodsElement.Add(newMethodElement);
@@ -307,17 +323,19 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var seqPoints = realMethod
                 .Elements("SequencePoints")
                 .Elements("SequencePoint")
+                .GroupBy(s => s.Attribute("sl").Value, (line, seq) => new {Line = line, Seq = seq})
                 .ToArray();
 
             var branchPoints = realMethod
                 .Elements("BranchPoints")
                 .Elements("BranchPoint")
+                .GroupBy(s => s.Attribute("sl").Value, (line, branch) => new { Line = line, Branch = branch })
                 .ToArray();
 
-            long methodCoveredLines = seqPoints.Count(s => s.Attribute("vc").Value != "0");
+            long methodCoveredLines = seqPoints.Count(s => s.Seq.Any(seq => seq.Attribute("vc").Value != "0"));
             long methodTotalLines = seqPoints.LongLength;
 
-            long methodCoveredBranches = branchPoints.Count(s => s.Attribute("vc").Value != "0");
+            long methodCoveredBranches = branchPoints.Count(s => s.Branch.Any(branch => branch.Attribute("vc").Value != "0"));
             long methodTotalBranches = branchPoints.LongLength;
 
             double lineRate = methodTotalLines == 0 ? 1 : methodCoveredLines / (double)methodTotalLines;
@@ -336,18 +354,18 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             for (int i = 0; i < seqPoints.Count(); i++)
             {
                 var seqPoint = seqPoints[i];
-                var methodLineElement = CreateLineElement(seqPoint);
+                var methodLineElement = CreateLineElement(seqPoint.Line, seqPoint.Seq);
                 linesElement.Add(methodLineElement);
 
-                var classLineElement = CreateLineElement(seqPoint);
+                var classLineElement = CreateLineElement(seqPoint.Line, seqPoint.Seq);
                 classLinesElement.Add(classLineElement);
 
-                var matchingBranchPoints = branchPoints.Where(bp => bp.Attribute("sl") != null && bp.Attribute("sl").Value == seqPoint.Attribute("sl").Value)
+                var matchingBranchPoints = branchPoints.Where(bp => bp.Line == seqPoint.Line)
                     .ToArray();
 
                 if (matchingBranchPoints.Any())
                 {
-                    long lineCoveredBranches = matchingBranchPoints.Count(s => s.Attribute("vc").Value != "0");
+                    long lineCoveredBranches = matchingBranchPoints.Count(s => s.Branch.Any(sb => sb.Attribute("vc").Value != "0"));
                     long totalMatchingBranchPoints = matchingBranchPoints.LongLength;
 
                     double matchBranchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / (double)totalMatchingBranchPoints;
@@ -359,7 +377,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             var linesElementList = linesElement.Elements("line").ToList();
 
-            var orphanedBranches = branchPoints.Where(bp => !linesElementList.Any(le => le.HasAttributeWithValue("number", bp.Attribute("sl").Value)));
+            var orphanedBranches = branchPoints.Where(bp => !linesElementList.Any(le => le.HasAttributeWithValue("number", bp.Line)));
 
             coveredLines += methodCoveredLines;
             totalLines += methodTotalLines;
@@ -370,12 +388,12 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return methodElement;
         }
 
-        private static XElement CreateLineElement(XElement seqPoint)
+        private static XElement CreateLineElement(string line, IEnumerable<XElement> seqPoints)
         {
             var lineElement = new XElement(
               "line",
-              new XAttribute("number", seqPoint.Attribute("sl").Value),
-              new XAttribute("hits", seqPoint.Attribute("vc").Value),
+              new XAttribute("number", line),
+              new XAttribute("hits", seqPoints.Sum(seq => int.Parse(seq.Attribute("vc").Value))),
               new XAttribute("branch", "false"));
 
             return lineElement;
