@@ -15,4 +15,8 @@
     <None Include="..\OpenCoverToCoberturaConverter\coverage-04.dtd" Link="coverage-04.dtd" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+
 </Project>

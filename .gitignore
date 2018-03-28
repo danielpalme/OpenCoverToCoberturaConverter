@@ -5,4 +5,4 @@
 *.Cache
 bin
 obj
-/.vs/OpenCoverToCoberturaConverter/v15/Server/sqlite3
+/.vs
