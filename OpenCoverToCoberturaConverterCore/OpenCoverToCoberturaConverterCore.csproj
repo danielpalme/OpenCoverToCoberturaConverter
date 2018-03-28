@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\OpenCoverToCoberturaConverter\Converter.cs" Link="Converter.cs" />
+    <Compile Include="..\OpenCoverToCoberturaConverter\Extensions.cs" Link="Extensions.cs" />
+    <Compile Include="..\OpenCoverToCoberturaConverter\Program.cs" Link="Program.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\OpenCoverToCoberturaConverter\coverage-04.dtd" Link="coverage-04.dtd" />
+  </ItemGroup>
+
+</Project>

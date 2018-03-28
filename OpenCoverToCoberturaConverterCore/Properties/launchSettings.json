@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "OpenCoverToCoberturaConverterCore": {
+      "commandName": "Project",
+      "commandLineArgs": "-input:C:\\Repos\\dialogweaver\\Coverage\\coverage.xml -output:C:\\Repos\\dialogweaver\\Coverage\\output.xml -sources:C:\\Repos\\dialogweaver\\src\\"
+    }
+  }
+}
