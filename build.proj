@@ -1,14 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Deploy" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Deploy">
+  <ItemGroup>
+    <PackageReference Include="NuGet.CommandLine">
+      <Version>4.5.1</Version>
+    </PackageReference>
+  </ItemGroup>
+  
+  <!-- Required to support command " msbuild .\build.proj /t:restore" -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 
   <!-- Version, adjust before build -->
   <PropertyGroup>
-    <Version>0.2.6.0</Version>
+    <Version>0.3.0.0</Version>
+    <VersionShort>0.3.0</VersionShort>
   </PropertyGroup>
   
   <!-- Tools -->
   <PropertyGroup>
-    <NuGetCommandLine>packages\NuGet.CommandLine.2.8.1\tools\NuGet.exe</NuGetCommandLine>
+    <NuGetCommandLine>$(UserProfile)\.nuget\packages\nuget.commandline\4.5.1\tools\NuGet.exe</NuGetCommandLine>
   </PropertyGroup>
   
   <Target Name="Clean">
@@ -16,11 +25,16 @@
   </Target>
 
   <Target Name="Compile">
+    <Exec Command="$(NuGetCommandLine) restore OpenCoverToCoberturaConverter.sln" />
     <MSBuild Projects="OpenCoverToCoberturaConverter.sln" Properties="Configuration=Release" />
   </Target>
 
   <Target Name="Deploy" DependsOnTargets="Clean; Compile">
     <MakeDir Directories="target" />
-    <Exec Command="$(NuGetCommandLine) pack OpenCoverToCoberturaConverter.nuspec -OutputDirectory target -Version $(Version)" />
+    <Exec Command="$(NuGetCommandLine) pack Deployment\nuget\OpenCoverToCoberturaConverter.nuspec -OutputDirectory target\packages -Version $(Version)" />
   </Target>
+
+  <Target Name="Publish" DependsOnTargets="Deploy">
+    <Exec Command="$(NuGetCommandLine) push .\target\packages\OpenCoverToCoberturaConverter.$(VersionShort).nupkg -ApiKey $(NugetApiKey) -Source https://www.nuget.org/api/v2/package" />
+  </Target> 
 </Project>

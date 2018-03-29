@@ -91,15 +91,22 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
         private static void ShowHelp()
         {
             Console.WriteLine();
+            Console.WriteLine("OpenCoverToCoberturaConverter " + typeof(Program).Assembly.GetName().Version);
+
+            Console.WriteLine();
             Console.WriteLine("Parameters:");
-            Console.WriteLine("[\"]-input:<OpenCover Report>[\"]");
-            Console.WriteLine("[\"]-output:<Cobertura Report>[\"]");
-            Console.WriteLine("[\"]-sources:<Solution Base Directory>[\"]");
-            Console.WriteLine("[\"]-includeGettersSetters:<true|false> (default: false)[\"]");
+            Console.WriteLine("    [\"]-input:<OpenCover Report>[\"]");
+            Console.WriteLine("    [\"]-output:<Cobertura Report>[\"]");
+            Console.WriteLine("    [\"]-sources:<Solution Base Directory>[\"]");
+            Console.WriteLine("    [\"]-includeGettersSetters:<true|false>[\"]");
+
+            Console.WriteLine();
+            Console.WriteLine("Default values::");
+            Console.WriteLine("    -includeGettersSetters:false");
 
             Console.WriteLine();
             Console.WriteLine("Example:");
-            Console.WriteLine("   \"-input:OpenCover.xml\" \"-output:Cobertura.xml\"");
+            Console.WriteLine("  \"-input:OpenCover.xml\" \"-output:Cobertura.xml\"");
         }
     }
 }
