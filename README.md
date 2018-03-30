@@ -34,5 +34,5 @@ Example:
 
 **.NET Core**
 ```
- dotnet OpenCoverToCoberturaConverterNetCore.dll "-input:OpenCover.xml" "-output:Cobertura.xml"
+ dotnet OpenCoverToCoberturaConverter.dll "-input:OpenCover.xml" "-output:Cobertura.xml"
 ```

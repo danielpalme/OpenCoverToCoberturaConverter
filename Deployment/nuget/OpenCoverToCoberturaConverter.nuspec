@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>OpenCoverToCoberturaConverter</id>
-    <version>0.3.0.0</version>
+    <version>0.3.1.0</version>
     <title />
     <authors>Daniel Palme</authors>
     <owners />
@@ -16,9 +16,9 @@
   </metadata>
   <files>
     <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverter.exe" target="tools" />
-    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverterNetCore.dll" target="tools" />
-    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverterNetCore.deps.json" target="tools" />
-    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverterNetCore.runtimeconfig.json" target="tools" />
+    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverter.dll" target="tools" />
+    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverter.deps.json" target="tools" />
+    <file src="..\..\target\bin\Release\OpenCoverToCoberturaConverter.runtimeconfig.json" target="tools" />
     <file src="..\..\LICENSE.txt" target="LICENSE.txt" />
   </files>
 </package>
