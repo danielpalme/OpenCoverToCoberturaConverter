@@ -10,7 +10,7 @@ Twitter: [@danielpalme](http://twitter.com/danielpalme)
 
 
 ## Usage
-*OpenCoverToCoberturaConverter* is a commandline tool which works with full .NET Framework and .NET Core
+*OpenCoverToCoberturaConverter* is a commandline tool which works with full .NET Framework and .NET Core.  
 It requires the following parameters:
 
 ```
