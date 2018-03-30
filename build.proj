@@ -27,6 +27,8 @@
   <Target Name="Compile">
     <Exec Command="$(NuGetCommandLine) restore OpenCoverToCoberturaConverter.sln" />
     <MSBuild Projects="OpenCoverToCoberturaConverter.sln" Properties="Configuration=Release" />
+    <RemoveDir Directories="bin" />
+    <RemoveDir Directories="obj" />
   </Target>
 
   <Target Name="Deploy" DependsOnTargets="Clean; Compile">
