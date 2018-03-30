@@ -20,7 +20,7 @@ Parameters:
     ["]-sources:<Solution Base Directory>["]
     ["]-includeGettersSetters:<true|false>["]
 
-Default values::
+Default values:
     -includeGettersSetters:false
 
 Example:
