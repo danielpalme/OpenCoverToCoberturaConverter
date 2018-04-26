@@ -241,10 +241,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             foreach (var method in methods.ToArray())
             {
                 var newMethodElement = CreateMethodElement(module, method, linesElement, ref classCoveredLines, ref classTotalLines, ref classCoveredBranches, ref classTotalBranches);
-                if (newMethodElement != null)
-                {
-                    methodsElement.Add(newMethodElement);
-                }
+                methodsElement.Add(newMethodElement);
             }
 
             double lineRate = classTotalLines == 0 ? 1 : classCoveredLines / (double)classTotalLines;
@@ -282,14 +279,12 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             string methodName = match.Success ? match.Groups["methodname"].Value : method.Element("Name").Value;
             string signature = match.Success ? match.Groups["signature"].Value : method.Element("Name").Value;
 
-            XElement realMethod = method;
-
             // Async method?
             if (methodreturn.Contains("System.Threading.Tasks.Task"))
             {
                 var asyncClassName = className + "/" + "<" + methodName + ">";
 
-                realMethod = module
+                var realMethod = module
                     .Elements("Classes")
                     .Elements("Class")
                     .Where(c => c.Element("FullName").Value.StartsWith(asyncClassName))
@@ -297,19 +292,19 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                     .Elements("Method")
                     .FirstOrDefault(c => c.Element("Name").Value.Contains("<" + methodName + ">")
                         && c.Element("Name").Value.Contains("::MoveNext()"));
+
+                if (realMethod != null)
+                {
+                    method = realMethod;
+                }
             }
 
-            if (realMethod == null)
-            {
-                return null;
-            }
-
-            var seqPoints = realMethod
+            var seqPoints = method
                 .Elements("SequencePoints")
                 .Elements("SequencePoint")
                 .ToArray();
 
-            var branchPoints = realMethod
+            var branchPoints = method
                 .Elements("BranchPoints")
                 .Elements("BranchPoint")
                 .ToArray();
