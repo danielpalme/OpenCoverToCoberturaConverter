@@ -11,8 +11,8 @@
 
   <!-- Version, adjust before build -->
   <PropertyGroup>
-    <Version>0.3.2.0</Version>
-    <VersionShort>0.3.2</VersionShort>
+    <Version>0.3.3.0</Version>
+    <VersionShort>0.3.3</VersionShort>
   </PropertyGroup>
   
   <!-- Tools -->

@@ -340,15 +340,15 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 var matchingBranchPoints = branchPoints.Where(bp => bp.Attribute("sl") != null && bp.Attribute("sl").Value == seqPoint.Attribute("sl").Value)
                     .ToArray();
 
-                if (matchingBranchPoints.Any())
+                if (matchingBranchPoints.Length > 0)
                 {
                     long lineCoveredBranches = matchingBranchPoints.Count(s => s.Attribute("vc").Value != "0");
                     long totalMatchingBranchPoints = matchingBranchPoints.LongLength;
 
                     double matchBranchRate = totalMatchingBranchPoints == 0 ? 1 : lineCoveredBranches / (double)totalMatchingBranchPoints;
 
-                    AddBranchCoverageToLineElement(methodLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
-                    AddBranchCoverageToLineElement(classLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints);
+                    AddBranchCoverageToLineElement(methodLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints, matchingBranchPoints);
+                    AddBranchCoverageToLineElement(classLineElement, matchBranchRate, lineCoveredBranches, totalMatchingBranchPoints, matchingBranchPoints);
                 }
             }
 
@@ -376,12 +376,25 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             return lineElement;
         }
 
-        private static void AddBranchCoverageToLineElement(XElement firstMethodLineElement, double coverage, double visitedBranches, double totalBranches)
+        private static void AddBranchCoverageToLineElement(XElement firstMethodLineElement, double coverage, double visitedBranches, double totalBranches, XElement[] matchingBranchPoints)
         {
             if (firstMethodLineElement != null)
             {
                 firstMethodLineElement.SetAttributeValue("branch", "true");
                 firstMethodLineElement.Add(new XAttribute("condition-coverage", string.Format("{0}% ({1}/{2})", Math.Round(coverage * 100, MidpointRounding.AwayFromZero), visitedBranches, totalBranches)));
+
+                var conditionsElement = new XElement("conditions");
+
+                for (int i = 0; i < matchingBranchPoints.Length; i++)
+                {
+                    conditionsElement.Add(new XElement(
+                        "condition",
+                        new XAttribute("number", i),
+                        new XAttribute("type", "jump"),
+                        new XAttribute("coverage", matchingBranchPoints[i].Attribute("vc").Value == "0" ? "0%" : "100%")));
+                }
+
+                firstMethodLineElement.Add(conditionsElement);
             }
         }
 
