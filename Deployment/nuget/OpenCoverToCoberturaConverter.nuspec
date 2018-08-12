@@ -8,6 +8,7 @@
     <owners />
     <licenseUrl>https://raw.githubusercontent.com/danielpalme/OpenCoverToCoberturaConverter/master/LICENSE.txt</licenseUrl>
     <projectUrl>https://github.com/danielpalme/OpenCoverToCoberturaConverter</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/danielpalme/OpenCoverToCoberturaConverter/master/docs/resources/logo_512.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Converts OpenCover reports to Cobertura reports.</description>
     <summary />

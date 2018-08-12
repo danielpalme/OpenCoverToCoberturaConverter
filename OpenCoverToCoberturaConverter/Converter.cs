@@ -41,7 +41,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
             var rootElement = new XElement("coverage");
 
             rootElement.Add(CreateSourcesElement(openCoverReport, sourcesDirectory, out commonPrefix));
-            var rootPrefixRegex = new Regex("^" + Regex.Escape(commonPrefix), RegexOptions.IgnoreCase);
+            var rootPrefixRegex = commonPrefix == null ? null : new Regex("^" + Regex.Escape(commonPrefix), RegexOptions.IgnoreCase);
             rootElement.Add(CreatePackagesElement(openCoverReport, includeGettersSetters, ref coveredLines, ref totalLines, ref coveredBranches, ref totalBranches, rootPrefixRegex));
 
             double lineRate = totalLines == 0 ? 1 : coveredLines / (double)totalLines;
@@ -210,7 +210,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
 
             // First method is used to determine name of file (partial classes are not handled correctly)
             string fileName = firstMethodWithFileRef == null ? string.Empty : filesById[firstMethodWithFileRef.Element("FileRef").Attribute("uid").Value];
-            fileName = commonPrefix.Replace(fileName, string.Empty);
+            fileName = commonPrefix == null ? fileName : commonPrefix.Replace(fileName, string.Empty);
 
             var classElement = new XElement(
               "class",
