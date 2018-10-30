@@ -36,3 +36,11 @@ Example:
 ```
  dotnet OpenCoverToCoberturaConverter.dll "-input:OpenCover.xml" "-output:Cobertura.xml"
 ```
+
+## Alternative
+An alternative to *OpenCoverToCoberturaConverter* is [ReportGenerator](https://github.com/danielpalme/ReportGenerator). 
+*ReportGenerator* has the following advantages:
+* Merging of several coverage files
+* Supports several input and output formats
+
+![Comparision](https://raw.githubusercontent.com/danielpalme/OpenCoverToCoberturaConverter/master/docs/resources/comparision.png)
