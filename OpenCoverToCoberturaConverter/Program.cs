@@ -22,32 +22,25 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 }
             }
 
-            string inputFile = null;
-
-            if (!namedArguments.TryGetValue("INPUT", out inputFile))
+            if (!namedArguments.TryGetValue("INPUT", out string inputFile))
             {
                 ShowHelp();
                 return 1;
             }
 
-            string targetFile = null;
-
-            if (!namedArguments.TryGetValue("OUTPUT", out targetFile))
+            if (!namedArguments.TryGetValue("OUTPUT", out string targetFile))
             {
                 ShowHelp();
                 return 1;
             }
 
-            string sourcesDirectory = null;
-
-            if (!namedArguments.TryGetValue("SOURCES", out sourcesDirectory))
+            if (!namedArguments.TryGetValue("SOURCES", out string sourcesDirectory))
             {
                 Console.WriteLine("Sources directory not set, will try to guess. This might not work properly when merging results from multiple test assemblies.");
             }
 
-            string includeGettersSettersString = null;
             bool includeGetSet = false;
-            if (namedArguments.TryGetValue("INCLUDEGETTERSSETTERS", out includeGettersSettersString))
+            if (namedArguments.TryGetValue("INCLUDEGETTERSSETTERS", out string includeGettersSettersString))
             {
                 if (!bool.TryParse(includeGettersSettersString, out includeGetSet))
                 {
@@ -61,7 +54,7 @@ namespace Palmmedia.OpenCoverToCoberturaConverter
                 return 1;
             }
 
-            XDocument inputReport = null;
+            XDocument inputReport;
 
             try
             {
