@@ -1,12 +1,12 @@
 # OpenCoverToCoberturaConverter
 
-Converts [OpenCover](https://github.com/sawilde/OpenCover) reports to [Cobertura](http://cobertura.sourceforge.net) reports.
+Converts [OpenCover](https://github.com/sawilde/OpenCover) reports to [Cobertura](https://cobertura.github.io/cobertura) reports.
 
-Also available as **NuGet** package: http://www.nuget.org/packages/OpenCoverToCoberturaConverter
+Also available as **NuGet** package: https://www.nuget.org/packages/OpenCoverToCoberturaConverter
 
 Author: Daniel Palme  
-Blog: [www.palmmedia.de](http://www.palmmedia.de)  
-Twitter: [@danielpalme](http://twitter.com/danielpalme)
+Blog: [www.palmmedia.de](https://www.palmmedia.de)  
+Twitter: [@danielpalme](https://twitter.com/danielpalme)
 
 
 ## Usage
